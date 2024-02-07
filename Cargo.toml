@@ -1,0 +1,15 @@
+[package]
+name = "rizpackagemonitor"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+poise = "0.6.1"
+tokio = { version = "1.36.0", features = ["full"] }
+serde_json = "1.0.113"
+serde = "1.0.196"
+base64 = "0.21.7"
+reqwest = { version = "0.11.24" }
+version-compare = "0.1.1"
