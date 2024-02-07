@@ -10,9 +10,33 @@ pub async fn httpreq_get(url: String) -> String{
     return body;
 }
 
-pub async fn httpreq_post(url: String, body: String) -> String{
+pub async fn httpreq_post(url: String, body: String, content_type: String) -> String{
     let client = reqwest::Client::new();
-    let body = client.post(url).body(body).send().await.unwrap().text().await.unwrap();
+    let body = client.post(url).header("Content-Type", content_type).body(body).send().await.unwrap().text().await.unwrap();
+    return body;
+}
+
+pub async fn assetripper_httpreq_post_path_form(url: String, path: String, content_type: String) -> String {
+    // 创建一个 reqwest 的客户端
+    let client = reqwest::Client::new();
+    // 创建一个 Part，设置文本内容和 MIME 类型
+    let path_part = reqwest::multipart::Part::text(path)
+        .mime_str(&content_type)
+        .unwrap();
+    // 创建一个 Form，添加一个名为 "Path" 的文本字段
+    let form = reqwest::multipart::Form::new()
+        .part("Path", path_part);
+    // 使用客户端发送 POST 请求，设置请求体为 form
+    let body = client
+        .post(url)
+        .multipart(form)
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap();
+    // 返回响应体
     return body;
 }
 

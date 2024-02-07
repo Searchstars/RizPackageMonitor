@@ -1,4 +1,7 @@
 /target
 /res_tmp
+/assets_tmp
+/latest_assets
+/latest_res
 latest_check_ver
 *.apk

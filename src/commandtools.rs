@@ -65,3 +65,46 @@ pub async fn download_game_resources(){
         }
     }
 }
+
+/// 将所有下载到的游戏资源拆包并放到临时文件夹中，需要res_tmp文件夹存在，否则直接报错
+pub async fn extract_game_resources(){
+    if(!Path::new("./assets_tmp").exists()){
+        fs::create_dir("./assets_tmp").unwrap();
+    }
+    println!("当前运行路径: {}", std::env::current_dir().unwrap().to_string_lossy());
+    println!("开始加载bundle文件夹");
+    crate::tools::assetripper_httpreq_post_path_form(crate::get_config().assetripper_server_url + "/LoadFolder", (std::env::current_dir().unwrap().to_string_lossy() + "/res_tmp/").to_string(), "multipart/form-data; boundary=&".to_string()).await;
+    println!("bundle文件加载完毕, 开始导出");
+    crate::tools::assetripper_httpreq_post_path_form(crate::get_config().assetripper_server_url + "/Export", (std::env::current_dir().unwrap().to_string_lossy() + "/assets_tmp").to_string(), "multipart/form-data; boundary=&".to_string()).await;
+    println!("导出操作现已完成");
+}
+
+/// 对比两个res文件夹中的音乐资源，并返回dir1比dir2多出来的新音乐的名称列表
+fn compare_cri_files(dir1: &str, dir2: &str) -> Vec<String> {
+    // 定义一个空的向量，用于存储结果
+    let mut result = Vec::new();
+
+    // 定义一个闭包，用于判断文件名是否包含两个关键字
+    let is_target = |name: &str| name.contains(".") && name.contains("acb=");
+
+    // 遍历第一个文件夹中的所有文件
+    for entry in fs::read_dir(dir1).unwrap() {
+        // 获取文件路径
+        let path = entry.unwrap().path();
+        // 如果是文件，并且是目标文件
+        if path.is_file() && is_target(path.file_name().unwrap().to_str().unwrap()) {
+            // 获取文件名
+            let name = path.file_name().unwrap().to_str().unwrap().to_owned();
+            // 如果第二个文件夹中不存在同名文件，或者同名文件不是目标文件
+            if !Path::new(dir2).join(&name).exists()
+                || !is_target(Path::new(dir2).join(&name).file_name().unwrap().to_str().unwrap())
+            {
+                // 将文件名加入结果向量
+                result.push(name);
+            }
+        }
+    }
+
+    // 返回结果向量
+    result
+}
