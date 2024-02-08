@@ -76,3 +76,28 @@ pub fn get_file_size_in_mb(filename: &str) -> f64 {
     // 返回 mb 值
     mb
 }
+
+/// 传入文件夹路径，获取文件夹大小，一般用于判定一个文件夹是否有效，资源下载是否正确完成等
+pub fn folder_size(path: &str) -> f32 {
+    // 初始化一个变量，用于累计文件夹内所有文件的大小，以字节为单位
+    let mut total_size = 0;
+
+    // 使用fs::read_dir方法，遍历文件夹内的所有条目
+    for entry in std::fs::read_dir(path).unwrap() {
+        // 获取每个条目的元数据，包括文件类型和大小
+        let metadata = entry.as_ref().unwrap().metadata().unwrap();
+
+        // 如果条目是一个文件，就把它的大小加到total_size上
+        if metadata.is_file() {
+            total_size += metadata.len();
+        }
+
+        // 如果条目是一个子文件夹，就递归调用folder_size函数，把它的大小加到total_size上
+        if metadata.is_dir() {
+            total_size += folder_size(entry.as_ref().unwrap().path().to_str().unwrap()) as u64;
+        }
+    }
+
+    // 把total_size转换为f32类型，并除以1024 * 1024，得到以M为单位的结果
+    total_size as f32 / (1024.0 * 1024.0)
+}

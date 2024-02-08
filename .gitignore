@@ -5,3 +5,7 @@
 /latest_res
 latest_check_ver
 *.apk
+config.json
+doing_update_process
+checked_new_ver
+can_retry

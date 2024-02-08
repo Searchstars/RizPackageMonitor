@@ -7,6 +7,7 @@ pub async fn check_updates() -> bool{
     if(Path::new("latest_check_ver").exists()){
         for config in game_config.configs{
             if(version_compare::Version::from(&config.version) > version_compare::Version::from(&fs::read_to_string("latest_check_ver").unwrap())){
+                fs::write("checked_new_ver", &config.version).unwrap();
                 return true;
             }
         }
@@ -43,7 +44,7 @@ pub async fn download_game() -> bool{
 pub async fn download_game_resources(){
     let game_config = crate::tools::get_game_config().await;
     for config in game_config.configs{
-        if(config.version == fs::read_to_string("./latest_check_ver").unwrap()){
+        if(config.version == fs::read_to_string("./checked_new_ver").unwrap()){
             let resource_url_str = config.resourceUrl.as_str();
             let catalog_string = crate::tools::httpreq_get(config.resourceUrl.to_string() + &"/Android/catalog_catalog.json").await;
             let catalog: crate::structs::Catalog = serde_json::from_str(&catalog_string).unwrap();
@@ -80,7 +81,7 @@ pub async fn extract_game_resources(){
 }
 
 /// 对比两个res文件夹中的音乐资源，并返回dir1比dir2多出来的新音乐的名称列表
-fn compare_cri_files(dir1: &str, dir2: &str) -> Vec<String> {
+pub fn compare_cri_files(dir1: &str, dir2: &str) -> Vec<String> {
     // 定义一个空的向量，用于存储结果
     let mut result = Vec::new();
 
@@ -107,4 +108,84 @@ fn compare_cri_files(dir1: &str, dir2: &str) -> Vec<String> {
 
     // 返回结果向量
     result
+}
+
+/// 对比dir1中比dir2中多了多少张图片，多少张铺面等
+pub fn compare_asset_files(dir1: &str, dir2: &str) -> crate::structs::AssetFolderCompareResult {
+    // 定义一个图片扩展名的向量
+    let image_exts = vec!["png", "jpg", "jpeg", "gif", "bmp", "svg"];
+
+    // 定义铺面和曲绘的关键词常量
+    const CHART_IN_WORD: &str = "Chart_IN_";
+    const CHART_HD_WORD: &str = "Chart_HD_";
+    const CHART_EZ_WORD: &str = "Chart_EZ_";
+    const CHART_WORD: &str = "Chart_";
+    const ILLUST_WORD: &str = "illustration.";
+
+    // 使用 HashSet 来存储 dir2 中的文件名
+    let mut dir2_files = std::collections::HashSet::new();
+
+    // 使用 walkdir 库，递归地遍历 dir2 中的文件
+    for entry in walkdir::WalkDir::new(dir2) {
+        // 如果 entry 是一个文件，获取它的名称并转换为 String 类型
+        if let Ok(entry) = entry {
+            if entry.file_type().is_file() {
+                if let Some(name) = entry.file_name().to_str() {
+                    //println!("{} 被插入到HashSet", &name);
+                    // 如果它是个文件，就将名称插入到 HashSet 中
+                    dir2_files.insert(name.to_string());
+                }
+            }
+        }
+    }
+
+    let mut extra_images_num = 0;
+    let mut extra_in_chart_num = 0;
+    let mut extra_hd_chart_num = 0;
+    let mut extra_ez_chart_num = 0;
+    let mut extra_chart_num = 0;
+    let mut extra_illust_num = 0;
+
+    // 使用 walkdir 库，递归地遍历 dir1 中的文件
+    for entry in walkdir::WalkDir::new(dir1) {
+        // 如果 entry 是一个文件，获取它的名称并转换为 String 类型
+        if let Ok(entry) = entry {
+            if entry.file_type().is_file() {
+                if let Some(name) = entry.file_name().to_str() {
+                    let name = name.to_string();
+                    if let Some(ext) = name.split('.').last() {
+                        // 如果扩展名是图片扩展名，且名称不在 HashSet 中，将发现的图片数量自增
+                        if image_exts.contains(&ext) && !dir2_files.contains(&name) {
+                            extra_images_num += 1;
+                        }
+                    }
+                    if name.contains(CHART_IN_WORD) && name.contains(".json") && !dir2_files.contains(&name){
+                        extra_in_chart_num += 1;
+                    }
+                    if name.contains(CHART_HD_WORD) && name.contains(".json") && !dir2_files.contains(&name){
+                        extra_hd_chart_num += 1;
+                    }
+                    if name.contains(CHART_EZ_WORD) && name.contains(".json") && !dir2_files.contains(&name){
+                        extra_ez_chart_num += 1;
+                    }
+                    if name.contains(CHART_WORD) && name.contains(".json") && !dir2_files.contains(&name){
+                        extra_chart_num += 1;
+                    }
+                    if name.contains(ILLUST_WORD) && name.contains(".png") && name.contains(".0.") && !dir2_files.contains(&name){
+                        extra_illust_num += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    // 返回一个结构体，包含各种类型的文件数量的差异
+    crate::structs::AssetFolderCompareResult {
+        extra_images_num,
+        extra_in_chart_num,
+        extra_hd_chart_num,
+        extra_ez_chart_num,
+        extra_chart_num,
+        extra_illust_num
+    }
 }

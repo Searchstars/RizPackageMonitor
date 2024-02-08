@@ -5,7 +5,17 @@ pub struct Config{
     pub token: String, // 机器人Token
     pub guild_id_list: Vec<u64>, // 机器人需要工作的服务器ID列表
     pub enable_dm_command: bool, // 是否启用私聊指令
-    pub assetripper_server_url: String // AssetRipper服务器地址（注意，端口号需要在每次启动AssetRipper时更新）
+    pub assetripper_server_url: String, // AssetRipper服务器地址（注意，端口号需要在每次启动AssetRipper时更新）
+    pub auto_check_send_channelid: u64
+}
+
+pub struct AssetFolderCompareResult{
+    pub extra_images_num: i32,
+    pub extra_in_chart_num: i32,
+    pub extra_hd_chart_num: i32,
+    pub extra_ez_chart_num: i32,
+    pub extra_chart_num: i32,
+    pub extra_illust_num: i32
 }
 
 #[derive(Serialize, Deserialize)]
