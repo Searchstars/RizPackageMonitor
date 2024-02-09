@@ -40,6 +40,8 @@ pub async fn download_game() -> bool{
     return true;
 }
 
+static mut CURRENT_DOWNLOAD_URL: &str = "";
+
 /// 下载所有游戏资源文件到./res_tmp目录下，如果没有该文件夹会自动创建，后续资源的对比和移动需要自行操作
 pub async fn download_game_resources(){
     let game_config = crate::tools::get_game_config().await;
@@ -51,16 +53,34 @@ pub async fn download_game_resources(){
             if(!Path::new("./res_tmp").exists()){
                 fs::create_dir("./res_tmp").unwrap();
             }
+            // 创建一个空的 FuturesUnordered 集合
+            let mut download_tasks = futures::stream::FuturesUnordered::new();
             for InternalId in catalog.m_InternalIds{
                 if(InternalId.contains("http://") && InternalId.contains("/default/")){
                     let mut download_url = InternalId.clone().replace("http://rizastcdn.pigeongames.cn/default", resource_url_str);
                     if(InternalId.contains("/cridata_assets_criaddressables/")){
                         download_url = download_url.replace(".bundle", "");
                     }
+                    let download_url_vecu8 = (&download_url).clone().into_bytes();
                     let download_url_splits: Vec<&str> = download_url.split("/").collect();
                     let file_name = download_url_splits[download_url_splits.len() - 1];
-                    crate::tools::download_file(&download_url, "./res_tmp/".to_string() + &file_name).await;
+                    // 将每个下载任务加入到集合中，而不是立即执行
+                    download_tasks.push(async {
+                        // 使用 reqwest::get 异步发送 GET 请求，等待响应
+                        let response = reqwest::get(download_url).await.expect("请求失败");
+                        let download_url_clone = crate::tools::vec_to_string(download_url_vecu8).unwrap();
+                        // 我们史山代码是这样的 可是没办法 在另一个线程里确实就得重新实现一遍
+                        let download_url_splits: Vec<&str> = download_url_clone.split("/").collect();
+                        let file_name = download_url_splits[download_url_splits.len() - 1];
+                        // 使用 bytes 方法获取响应的二进制数据
+                        let data = response.bytes().await.expect("获取数据失败");
+                        // 使用 std::fs::write 函数将数据写入到 save_path 指定的文件中
+                        std::fs::write(format!("./res_tmp/{}", file_name), data).expect("写入文件失败");
+                    });
                 }
+            }
+            // 等待所有的下载任务完成
+            while let Some(result) = futures::StreamExt::next(&mut download_tasks).await {
             }
             println!("下载完成");
         }
@@ -146,6 +166,12 @@ pub fn compare_asset_files(dir1: &str, dir2: &str) -> crate::structs::AssetFolde
     let mut extra_chart_num = 0;
     let mut extra_illust_num = 0;
 
+    for dir2_file in &dir2_files{
+        //println!("{}\n",dir2_file);
+    }
+
+    let dir2_files_vec = dir2_files.iter().collect::<Vec<&String>>();
+
     // 使用 walkdir 库，递归地遍历 dir1 中的文件
     for entry in walkdir::WalkDir::new(dir1) {
         // 如果 entry 是一个文件，获取它的名称并转换为 String 类型
@@ -159,19 +185,24 @@ pub fn compare_asset_files(dir1: &str, dir2: &str) -> crate::structs::AssetFolde
                             extra_images_num += 1;
                         }
                     }
-                    if name.contains(CHART_IN_WORD) && name.contains(".json") && !dir2_files.contains(&name){
-                        extra_in_chart_num += 1;
+                    //println!("{}",name);
+                    if name.contains(CHART_IN_WORD) && name.contains(".json"){
+                        println!("文件{}含有CHART_IN_WORD和.json后缀", &name);
+                        if (!crate::tools::string_vec_contains_string(dir2_files_vec.clone(), &name)) && (!name.contains(".meta")){
+                            println!("Passed -> 文件{}不在dir2_files列表中且不含有.meta后缀", &name);
+                            extra_in_chart_num += 1;
+                        }
                     }
-                    if name.contains(CHART_HD_WORD) && name.contains(".json") && !dir2_files.contains(&name){
+                    if name.contains(CHART_HD_WORD) && name.contains(".json") && (!crate::tools::string_vec_contains_string(dir2_files_vec.clone(), &name)) && (!name.contains(".meta")){
                         extra_hd_chart_num += 1;
                     }
-                    if name.contains(CHART_EZ_WORD) && name.contains(".json") && !dir2_files.contains(&name){
+                    if name.contains(CHART_EZ_WORD) && name.contains(".json") && (!dir2_files.contains(&name)) && (!name.contains(".meta")){
                         extra_ez_chart_num += 1;
                     }
-                    if name.contains(CHART_WORD) && name.contains(".json") && !dir2_files.contains(&name){
+                    if name.contains(CHART_WORD) && name.contains(".json") && (!dir2_files.contains(&name)) && (!name.contains(".meta")){
                         extra_chart_num += 1;
                     }
-                    if name.contains(ILLUST_WORD) && name.contains(".png") && name.contains(".0.") && !dir2_files.contains(&name){
+                    if name.contains(ILLUST_WORD) && name.contains(".png") && name.contains(".0.") && (!dir2_files.contains(&name)) && (!name.contains(".meta")){
                         extra_illust_num += 1;
                     }
                 }

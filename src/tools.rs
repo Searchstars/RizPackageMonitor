@@ -1,3 +1,23 @@
+use std::time::Duration;
+
+pub fn string_vec_contains_string(vec: Vec<&String>, s: &String) -> bool {
+    for i in vec.clone() {
+        if i == s {
+            return true;
+        }
+        else{
+            //println!("{} != {}",i,s);
+        }
+    }
+    println!("{}", s);
+    let mut tmp_vecdir2 = "".to_string();
+    for s in vec{
+        tmp_vecdir2 += &("\n".to_string() + s.as_str());
+    }
+    std::fs::write("./dbg_tmp", tmp_vecdir2).unwrap();
+    false
+}
+
 /// 将Vec<u8>转换为String
 pub fn vec_to_string(v: Vec<u8>) -> Result<String, std::string::FromUtf8Error> {
     let s = String::from_utf8(v);
@@ -30,6 +50,7 @@ pub async fn assetripper_httpreq_post_path_form(url: String, path: String, conte
     let body = client
         .post(url)
         .multipart(form)
+        .timeout(Duration::from_secs(114514))
         .send()
         .await
         .unwrap()

@@ -4,6 +4,7 @@
 #! [allow(dead_code)]
 #! [allow(unused_parens)]
 #! [allow(non_upper_case_globals)]
+#! [allow(unused_variables)]
 
 mod structs;
 mod urls;
@@ -66,6 +67,7 @@ pub async fn process_update() -> String{
         else{
             reply_msg += "      此bot的运营人员似乎并没有留上一个版本的热更资源文件，或是错误的删除了上一个版本的热更资源文件，因此无法进行对比分析\n";
         }
+        /*
         if(std::path::Path::new("./latest_assets").exists()){
             if(std::path::Path::new("./assets_tmp").exists()){
                 fs::remove_dir_all("./assets_tmp").unwrap();
@@ -78,25 +80,30 @@ pub async fn process_update() -> String{
             reply_msg += "\n针对资源文件的拆包对比分析结果如下：\n\n      此bot的运营人员似乎并没有留上一个版本的解包后资源文件，或是错误的删除了上一个版本的解包后资源文件，因此无法进行对比分析\n";
         }
 
-        if(tools::folder_size("./assets_tmp") < 300.0 || tools::folder_size("./res_tmp") < 300.0){
+        if(!std::path::Path::new("./assets_tmp/ExportedProject/Assets/Default.asset").exists() || tools::folder_size("./res_tmp") < 300.0){
             reply_msg = format!("内部错误，下载到的热更资源文件或解包得到的资源文件占用的存储空间大小小于预期（300.0M），故认定本次分析结果无效，建议retry\ntools::folder_size(\"./assets_tmp\") = {}\ntools::folder_size(\"./res_tmp\") = {}", tools::folder_size("./assets_tmp"), tools::folder_size("./res_tmp"));
             fs::write("./can_retry", fs::read_to_string("./checked_new_ver").unwrap()).unwrap();
         }
+        */
 
         fs::write("./latest_check_ver", fs::read_to_string("./checked_new_ver").unwrap()).unwrap();
         fs::remove_file("./checked_new_ver").unwrap();
         fs::remove_file("./doing_update_process").unwrap();
         
         if(!reply_msg.contains("内部错误，下载到的热更资源文件或解包得到的资源文件占用的存储空间大小小于预期")){
+            /*
             if(std::path::Path::new("./latest_assets").exists()){
                 fs::remove_dir_all("./latest_assets").unwrap();
             }
+            */
             if(std::path::Path::new("./latest_res").exists()){
                 fs::remove_dir_all("./latest_res").unwrap();
             }
-            fs::rename("./assets_tmp", "./latest_assets").unwrap();
+            //fs::rename("./assets_tmp", "./latest_assets").unwrap();
             fs::rename("./res_tmp", "latest_res").unwrap();
         }
+
+        reply_msg += "\n\n更多分析项有待开发，欢迎来本bot代码开源仓库提交PR！";
 
         return reply_msg;
     }

@@ -9,3 +9,4 @@ config.json
 doing_update_process
 checked_new_ver
 can_retry
+dbg_tmp

@@ -15,3 +15,4 @@ reqwest = { version = "0.11.24" }
 version-compare = "0.1.1"
 walkdir = "2.4.0"
 rayon = "1.8.1"
+futures = "0.3.30"
