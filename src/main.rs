@@ -133,11 +133,11 @@ async fn main() {
     let commands = vec![
         fucking(),
         commands::check_updates(),
-        commands::testcmd_download(),
-        commands::testcmd_downloadresources(),
-        commands::testcmd_extractresources(),
-        commands::testcmd_compare_cri_files(),
-        commands::testcmd_compare_asset_files()
+        //commands::testcmd_download(),
+        //commands::testcmd_downloadresources(),
+        //commands::testcmd_extractresources(),
+        //commands::testcmd_compare_cri_files(),
+        //commands::testcmd_compare_asset_files()
     ];
 
     let framework = poise::Framework::builder()
