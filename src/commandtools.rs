@@ -45,12 +45,16 @@ static mut CURRENT_DOWNLOAD_URL: &str = "";
 /// 下载所有游戏资源文件到./res_tmp目录下，如果没有该文件夹会自动创建，后续资源的对比和移动需要自行操作
 pub async fn download_game_resources(){
     let game_config = crate::tools::get_game_config().await;
+    println!("checked new ver file content={}", fs::read_to_string("./checked_new_ver").unwrap());
     for config in game_config.configs{
-        if(config.version == fs::read_to_string("./checked_new_ver").unwrap()){
+        println!("config.version={}",&config.version);
+        if(fs::read_to_string("./checked_new_ver").unwrap().contains(&config.version)){
             let resource_url_str = config.resourceUrl.as_str();
+            println!("resource_url_str={}",&resource_url_str);
             let catalog_string = crate::tools::httpreq_get(config.resourceUrl.to_string() + &"/Android/catalog_catalog.json").await;
             let catalog: crate::structs::Catalog = serde_json::from_str(&catalog_string).unwrap();
             if(!Path::new("./res_tmp").exists()){
+                println!("res_tmp not found");
                 fs::create_dir("./res_tmp").unwrap();
             }
             // 创建一个空的 FuturesUnordered 集合
@@ -84,6 +88,7 @@ pub async fn download_game_resources(){
             }
             println!("下载完成");
         }
+        println!("res_download_func_exit");
     }
 }
 
